@@ -52,7 +52,7 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser())
 dbUrl = process.env.DB_URL 
 // 'mongodb://127.0.0.1:27017/yelp-camp'
-mongoose.connect('mongodb://127.0.0.1:27017/yelp-camp')
+mongoose.connect(dbUrl)
 .then(()=>{
     console.log("Connected to mongoose");
 }).catch((err)=>{
