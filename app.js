@@ -9,7 +9,7 @@ const app = express()
 const path = require('path');
 const mongoose = require('mongoose');
 const ejsMate = require('ejs-mate');
-const session = require('express-session');
+// const session = require('express-session');
 const ExpressError = require('./utils/ExpressError');
 const methodOverride = require('method-override');
 const flash = require('connect-flash');
@@ -31,7 +31,41 @@ app.use(express.urlencoded({extended:true}))
 app.use(methodOverride('_method'))
 app.use(express.static(path.join(__dirname,'public')));
 
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+
+// dbUrl = process.env.DB_URL 
+const dbUrl =  process.env.DB_URL  || 'mongodb://127.0.0.1:27017/yelp-camp'
+console.log("Using DB URL:", dbUrl);
+
+mongoose.connect(dbUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log("Connected to mongoose");
+})
+.catch((err) => {
+    console.log("Could not connect to mongoose");
+    console.log(err);
+});
+
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    touchAfter: 24 * 60 * 60,
+    crypto: {
+        secret: 'thisisthesecret'
+    }
+});
+
+store.on('error', function(e){
+    console.log("Session store error");
+    console.log(e);
+})
+
 const sessionConfig = {
+    store,
+    name: 'session',
     secret: 'thisisthesecret',
     resave :false,
     saveUninitialized: true, 
@@ -50,15 +84,7 @@ passport.use(new localStrategy(User.authenticate()));
 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser())
-dbUrl = process.env.DB_URL 
-// 'mongodb://127.0.0.1:27017/yelp-camp'
-mongoose.connect('mongodb://127.0.0.1:27017/yelp-camp')
-.then(()=>{
-    console.log("Connected to mongoose");
-}).catch((err)=>{
-    console.log("Could not connect to mongoose");
-    console.log(err);
-})
+
 
 app.use((req,res,next)=>{
     res.locals.currentUser = req.user;
